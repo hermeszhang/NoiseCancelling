@@ -2,8 +2,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "INPUTX.h"
 #include "INPUTH.h"
+#include "time.h"
 
 #define PI	M_PI	
 #define TWOPI	(2.0*PI)      
@@ -105,10 +107,10 @@ void inity(double *y, int it){
     }
 }
 
-void cascadeOUT(double *y, double *past_tail, double *y1, int idx){
+void cascadeOUT(double *y, double *past_tail, double *y1, int idx, int N){
     int i;
     int j = 0;
-    for(i=idx; i<(idx+128); i++){
+    for(i=idx; i<(idx+(N/2)); i++){
         y[i] = past_tail[j]+y1[j];
         j++;
     }
@@ -117,13 +119,14 @@ void cascadeOUT(double *y, double *past_tail, double *y1, int idx){
 
 int main(int argc, char **argv){
     
-    int N = 256;
+    int N = 64;
     int M = 28815;
-    int O = 28672;
+    int O = 28768;
     int N2 = N/2;
     int L = (M/N2);
     int P = 4;
-    
+    clock_t start;
+    clock_t stop;   
     
     int i;
     int j = 0;
@@ -140,12 +143,12 @@ int main(int argc, char **argv){
     double *past_tail = (double *) calloc(N2,sizeof(double));
     double X1[2*N+1];
     double S[2*N+1];
-    double *tempy1 = (double *) malloc(sizeof(double) * 2*N+1);
+    double tempy1[2*N+1];
 
     
     for (k = 0; k < P; k++) {
         n = N2*k;
-        temparray = x+(n);
+        memcpy(temparray,x+(n),sizeof(double)*N);
         windowingFilter(h,temparray,x1,N);
         preFFT(x1,X1,N);
         modelfft(X1, N, 1);
@@ -157,20 +160,28 @@ int main(int argc, char **argv){
 
     for (k = P; k < L-1; k++) {
         n = N2*k;
-        temparray = x+(n);
+        memcpy(temparray,x+(n),sizeof(double)*N);
         windowingFilter(h,temparray,x1,N);
         
         preFFT(x1,X1,N);
         modelfft(X1, N, 1);
         
+	start = clock();
         SSMethod(S,G,D,X1,N);
-        
-        tempy1 = S;
+        stop = clock();
+
+
+	printf("Time start: %f\n", (double)start);
+	printf("Time stop: %f\n", (double)stop);
+
+	printf("Time elapsed: %f\n", ((double)stop - start) / CLOCKS_PER_SEC);
+
+        memcpy(tempy1,S,sizeof(double)*2*N+1);
         modelfft(tempy1, N, -1);
         postIFFT(tempy1,y1,N);
         
-        cascadeOUT(y,past_tail,y1,idx);
-        idx+=128;
+        cascadeOUT(y,past_tail,y1,idx,N);
+        idx+=(N/2);
         
         j = 0;
         for (i = N2;i < N;i++) {
@@ -193,7 +204,6 @@ int main(int argc, char **argv){
     free(temparray);
     free(G);
     free(D);
-    free(tempy1);
     free(past_tail);
     
     return 0;
