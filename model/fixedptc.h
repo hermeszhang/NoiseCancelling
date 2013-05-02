@@ -102,7 +102,7 @@ typedef	__uint128_t fixedptud;
 #endif
 
 #ifndef FIXEDPT_WBITS
-#define FIXEDPT_WBITS	16
+#define FIXEDPT_WBITS	12
 #endif
 
 #if FIXEDPT_WBITS >= FIXEDPT_BITS
@@ -147,7 +147,10 @@ fixedpt_mul(fixedpt A, fixedpt B)
 static inline fixedpt
 fixedpt_div(fixedpt A, fixedpt B)
 {
-	return (((fixedptd)A << FIXEDPT_FBITS) / (fixedptd)B);
+  fixedptd temp1;
+
+  temp1 = ((fixedptd)A << FIXEDPT_FBITS);
+  return ( temp1 / (fixedptd)B);
 }
 
 /*

@@ -233,16 +233,17 @@ void SSMethod(double *S, double *G, double *D, double *X1, int N){
     }
 }
 
-void SSMethodFP(fixedpt *S, fixedpt *G, fixedpt *D, double *X1, int N){
+void SSMethodFP(fixedpt *S, fixedpt *G, fixedpt *D, fixedpt *X1, int N){
     int i;
     fixedpt temp;
-    double tempD;
+    fixedpt tempD;
     for(i=0; i<N; i++){
-        tempD = 1/absComplex(X1[2*i+1],X1[2*i+2]);
-        temp = fixedpt_sub(fixedpt_rconst(1),fixedpt_mul(D[i],fixedpt_rconst(tempD)));
+      tempD = fixedpt_div(fixedpt_rconst(1),absComplexFP(X1[2*i+1],X1[2*i+2]));
+      temp = fixedpt_sub(fixedpt_rconst(1),fixedpt_mul(D[i],tempD));
         G[i] = fixedpt_div(fixedpt_add(temp,abs(temp)),fixedpt_rconst(2));
         S[2*i+1] = fixedpt_mul(G[i],fixedpt_rconst(X1[2*i+1]));
         S[2*i+2] = fixedpt_mul(G[i],fixedpt_rconst(X1[2*i+2]));
+	printf("i = %d\n", i);
     }
 }
 
@@ -340,7 +341,7 @@ int main(int argc, char **argv){
     idx = P*N2;
 
     for (k = P; k < L-1; k++) {
-      printf("Hello World!!!\r");
+      //printf("Hello World!!!\r");
         n = N2*k;
         memcpy(temparray,x+(n),sizeof(double)*N);
         windowingFilter(h,temparray,x1,N);
@@ -352,22 +353,28 @@ int main(int argc, char **argv){
 	start = clock();
         SSMethod(S,G,D,X1,N);
         stop = clock();
-        SSMethodFP(SFP,GFP,DFP,X1,N);
+	printf("Time start: %f\n", (double)start);
+	printf("Time stop: %f\n", (double)stop);
+	printf("Time elapsed(floating): %f\n", (stop - start));
+	start = clock();
 
-	//printf("Time start: %f\n", (double)start);
-	//printf("Time stop: %f\n", (double)stop);
+        SSMethodFP(SFP,GFP,DFP,X1FP,N);
+        stop = clock();
 
-	//printf("Time elapsed: %f\n", (stop - start));
+	printf("Time start: %f\n", (double)start);
+	printf("Time stop: %f\n", (double)stop);
+
+	printf("Time elapsed(fixed): %f\n", (stop - start));
         
-        for (i = 1; i < (2*N+1); i++) {
-            if(fixedpt_sub(fixedpt_rconst(S[i]),SFP[i]) > fixedpt_rconst(0.01)){
-                printf("i: %d\n",i);
-                printFP(fixedpt_rconst(S[i]));
-                printFP(SFP[i]);
-                printFP(fixedpt_sub(fixedpt_rconst(S[i]),SFP[i]));
-                exit(0);
-            }
-        }
+        /* for (i = 1; i < (2*N+1); i++) { */
+        /*     if(fixedpt_sub(fixedpt_rconst(S[i]),SFP[i]) > fixedpt_rconst(0.01)){ */
+        /*         printf("i: %d\n",i); */
+        /*         printFP(fixedpt_rconst(S[i])); */
+        /*         printFP(SFP[i]); */
+        /*         printFP(fixedpt_sub(fixedpt_rconst(S[i]),SFP[i])); */
+        /*         exit(0); */
+        /*     } */
+        /* } */
         
         memcpy(tempy1,S,sizeof(double)*2*N+1);
         modelfft(tempy1, N, -1);
